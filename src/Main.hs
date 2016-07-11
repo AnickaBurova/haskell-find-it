@@ -8,9 +8,8 @@ import Numeric
 import Codec.Binary.UTF8.String
 import Data.List
 import Anca.Text
+import Anca.Pipe
 
-(|>) :: a -> (a -> b) -> b
-x |> f = f x
 
 main :: IO ()
 main = do
@@ -19,8 +18,25 @@ main = do
     parse args (BL.unpack stream) |> BL.pack |> BL.putStr
 
 
-parse ["-x",text, colour] = find_it (readHexStr text) (readColour colour)
-parse [text,colour] = find_it (map ord text |> map fromIntegral) (readColour colour)
+parse ["-x",text, colour] = find_it tag needle
+                    where 
+                        needle = readHexStr text
+                        colourValue = readColour colour
+                        tag = toTag needle colourValue
+parse [text,colour] = find_it tag needle
+                    where 
+                        needle = map fromIntegral $ map ord text
+                        colourValue = readColour colour
+                        tag = toTag needle colourValue
+
+toTag text colour = tag_spec ++ [fromIntegral count, colour]
+                where count = length text
+
+find_it :: [Word8] -> [Word8] -> [Word8] -> [Word8]
+find_it tag needle haystack = concat $ map addtag $ map (\x -> (head x,needle `isPrefixOf` x)) $ filter (not.null) (tails haystack) 
+                where 
+                    addtag (x, True) = tag ++ [x]
+                    addtag (x, False) = [x] 
 
 readColour "black" = 0x30
 readColour "red" = 0x31
@@ -40,17 +56,6 @@ tag_text []  = [27,0x5b,0x31,0x3b,0x33,0x34,0x6d]
 tag_text [col,_] = [27,0x5b,0x31,0x3b,0x33,col,0x6d]
 reset_text = [27,0x5b,0x30,0x6d]
 
-find_it [] _ l = l
-find_it  _ _ [] = []
-find_it f colour l@(x:xs)
-    | isPrefixOf tag_spec l = tagf ++ (find_it f colour tagrest)
-    | isPrefixOf f l = (tag_spec ++  [fromIntegral count,colour]) ++ found ++ (find_it f colour rest)
-    | otherwise = x : (find_it f colour xs)
-    where 
-        count = length f
-        (found, rest) = splitAt count l
-        (tagf, tagrest) = splitAt 6 l
-        
 
 
 
