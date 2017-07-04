@@ -1,2 +1,5 @@
 dist/
 *.sw*
+.versionrc
+
+.stack-work/
