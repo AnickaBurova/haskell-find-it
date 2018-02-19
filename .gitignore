@@ -3,5 +3,3 @@ dist/
 .versionrc
 
 .stack-work/
-
-find-it.cabal
